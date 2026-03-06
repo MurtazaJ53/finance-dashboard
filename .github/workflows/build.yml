@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Rebuild native modules for Electron
+        run: npx electron-rebuild -f -w better-sqlite3
+
       - name: Build Vite Frontend
         run: npm run build:vite
 
@@ -35,7 +38,7 @@ jobs:
         run: npm run build:preload
 
       - name: Package with Electron Builder
-        run: npx electron-builder --win
+        run: npx electron-builder --win --publish never
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

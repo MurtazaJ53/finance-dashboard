@@ -37,6 +37,7 @@
     "vite": "^7.3.1"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
     "@types/better-sqlite3": "^7.6.13",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.14",
@@ -66,12 +67,25 @@
     },
     "files": [
       "dist/**/*",
-      "dist-electron/**/*"
+      "dist-electron/**/*",
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/bindings/**/*",
+      "node_modules/file-uri-to-path/**/*",
+      "node_modules/googleapis/**/*",
+      "node_modules/google-auth-library/**/*",
+      "node_modules/gaxios/**/*",
+      "node_modules/gcp-metadata/**/*",
+      "node_modules/gtoken/**/*",
+      "node_modules/jws/**/*",
+      "node_modules/electron-updater/**/*",
+      "node_modules/builder-util-runtime/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*"
     ],
     "win": {
       "target": [
         "nsis",
-        "msi",
         "portable"
       ]
     },
