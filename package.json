@@ -1,7 +1,7 @@
 {
   "name": "personal-finance-dashboard",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Premium Personal Finance Dashboard",
   "author": "FinancePro Team",
   "repository": {
@@ -86,8 +86,14 @@
     "win": {
       "target": [
         "nsis",
+        "msi",
         "portable"
       ]
+    },
+    "msi": {
+      "oneClick": false,
+      "shortcutName": "FinancePro",
+      "runAfterFinish": true
     },
     "nsis": {
       "oneClick": false,
