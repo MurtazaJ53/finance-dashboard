@@ -15,5 +15,9 @@ contextBridge.exposeInMainWorld('electron', {
     isSecurityEnabled: () => ipcRenderer.invoke('is-security-enabled'),
     verifyPin: (pin: string) => ipcRenderer.invoke('verify-pin', pin),
     setPin: (pin: string) => ipcRenderer.invoke('set-pin', pin),
-    disableSecurity: (pin: string) => ipcRenderer.invoke('disable-security', pin)
+    disableSecurity: (pin: string) => ipcRenderer.invoke('disable-security', pin),
+    authGoogle: () => ipcRenderer.invoke('auth-google'),
+    backupData: () => ipcRenderer.invoke('backup-to-drive'),
+    restoreData: () => ipcRenderer.invoke('restore-from-drive'),
+    logoutGoogle: () => ipcRenderer.invoke('logout-google')
 })

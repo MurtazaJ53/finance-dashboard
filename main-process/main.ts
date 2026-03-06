@@ -3,6 +3,10 @@ import { autoUpdater } from 'electron-updater'
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
+import { google } from 'googleapis'
+import { shell } from 'electron'
+import http from 'http'
+import url from 'url'
 
 let mainWindow: BrowserWindow | null = null
 let db: any = null
@@ -317,4 +321,113 @@ ipcMain.handle('disable-security', (event, pin) => {
     } catch (e) {
         return false
     }
+})
+
+// --- Google Drive Backup Logic ---
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'
+const GOOGLE_CLIENT_SECRET = 'YOUR_GOOGLE_CLIENT_SECRET'
+const REDIRECT_URI = 'http://localhost:8888/callback'
+
+const oauth2Client = new google.auth.OAuth2(
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    REDIRECT_URI
+)
+
+ipcMain.handle('auth-google', async () => {
+    return new Promise((resolve) => {
+        const server = http.createServer(async (req, res) => {
+            if (req.url?.startsWith('/callback')) {
+                const query = url.parse(req.url, true).query
+                if (query.code) {
+                    const { tokens } = await oauth2Client.getToken(query.code as string)
+                    oauth2Client.setCredentials(tokens)
+                    res.end('Authentication successful! You can close this window.')
+                    server.close()
+                    resolve(true)
+                }
+            }
+        }).listen(8888)
+
+        const authUrl = oauth2Client.generateAuthUrl({
+            access_type: 'offline',
+            scope: ['https://www.googleapis.com/auth/drive.file'],
+            prompt: 'consent'
+        })
+        shell.openExternal(authUrl)
+    })
+})
+
+ipcMain.handle('backup-to-drive', async () => {
+    try {
+        const drive = google.drive({ version: 'v3', auth: oauth2Client })
+        const dbPath = path.join(app.getPath('userData'), 'finance.db')
+
+        const response = await drive.files.list({
+            q: "name = 'finance_backup.db' and trashed = false",
+            fields: 'files(id)',
+            spaces: 'drive'
+        })
+
+        const fileMetadata = {
+            name: 'finance_backup.db',
+            parents: ['root']
+        }
+        const media = {
+            mimeType: 'application/x-sqlite3',
+            body: fs.createReadStream(dbPath)
+        }
+
+        if (response.data.files && response.data.files.length > 0) {
+            await drive.files.update({
+                fileId: response.data.files[0].id!,
+                media: media
+            })
+        } else {
+            await drive.files.create({
+                requestBody: fileMetadata,
+                media: media,
+                fields: 'id'
+            })
+        }
+        return true
+    } catch (e) {
+        console.error('Backup failed:', e)
+        return false
+    }
+})
+
+ipcMain.handle('restore-from-drive', async () => {
+    try {
+        const drive = google.drive({ version: 'v3', auth: oauth2Client })
+        const dbPath = path.join(app.getPath('userData'), 'finance.db')
+
+        const response = await drive.files.list({
+            q: "name = 'finance_backup.db' and trashed = false",
+            fields: 'files(id)',
+            spaces: 'drive'
+        })
+
+        if (!response.data.files || response.data.files.length === 0) return false
+
+        const fileId = response.data.files[0].id!
+        const dest = fs.createWriteStream(dbPath)
+
+        const res = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' })
+
+        return new Promise((resolve) => {
+            res.data
+                .on('end', () => resolve(true))
+                .on('error', () => resolve(false))
+                .pipe(dest)
+        })
+    } catch (e) {
+        console.error('Restore failed:', e)
+        return false
+    }
+})
+
+ipcMain.handle('logout-google', () => {
+    oauth2Client.setCredentials({})
+    return true
 })

@@ -33,6 +33,7 @@ import Papa from 'papaparse'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReportGenerator from './components/ReportGenerator'
 import AuthScreen from './components/AuthScreen'
+import CloudSync from './components/CloudSync'
 import {
     Chart as ChartJS,
     ArcElement,
@@ -78,6 +79,10 @@ declare global {
             verifyPin: (pin: string) => Promise<boolean>
             setPin: (pin: string) => Promise<boolean>
             disableSecurity: (pin: string) => Promise<boolean>
+            authGoogle: () => Promise<boolean>
+            backupData: () => Promise<boolean>
+            restoreData: () => Promise<boolean>
+            logoutGoogle: () => Promise<boolean>
         }
     }
 }
@@ -659,6 +664,7 @@ export default function App() {
                             <Settings size={16} /> CONFIGURE STARTING FUNDS
                         </button>
                     </div>
+                    <CloudSync onSyncComplete={() => addToast('Cloud sync complete!', 'success')} />
                 </div>
 
                 {activePage === 'dashboard' && (
