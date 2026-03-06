@@ -10,11 +10,14 @@
   },
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "npx vite",
-    "build": "npx vite build && npm run build:electron && npx electron-builder",
-    "build:electron": "npx esbuild main-process/main.ts --bundle --platform=node --external:electron --external:better-sqlite3 --outfile=dist-electron/main.js && npx esbuild main-process/preload.ts --bundle --platform=node --external:electron --outfile=dist-electron/preload.js",
-    "preview": "npx vite preview",
-    "electron:dev": "npx concurrently \"npx vite\" \"npx wait-on http://localhost:5173 && npm run build:electron && node launch.js\""
+    "dev": "vite",
+    "build:vite": "vite build",
+    "build:main": "esbuild main-process/main.ts --bundle --platform=node --external:electron --external:better-sqlite3 --external:electron-updater --external:googleapis --outfile=dist-electron/main.js",
+    "build:preload": "esbuild main-process/preload.ts --bundle --platform=node --external:electron --outfile=dist-electron/preload.js",
+    "build:electron": "npm run build:main && npm run build:preload",
+    "build": "npm run build:vite && npm run build:electron && electron-builder",
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && npm run build:electron && node launch.js\""
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.4",
@@ -59,7 +62,7 @@
       }
     ],
     "directories": {
-      "output": "dist-electron"
+      "output": "release"
     },
     "files": [
       "dist/**/*",
