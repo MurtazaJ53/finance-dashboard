@@ -1,0 +1,64 @@
+{
+  "name": "personal-finance-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Premium Personal Finance Dashboard",
+  "author": "FinancePro Team",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "npx vite",
+    "build": "npx vite build && npm run build:electron && npx electron-builder",
+    "build:electron": "npx esbuild main-process/main.ts --bundle --platform=node --external:electron --external:better-sqlite3 --outfile=dist-electron/main.js && npx esbuild main-process/preload.ts --bundle --platform=node --external:electron --outfile=dist-electron/preload.js",
+    "preview": "npx vite preview",
+    "electron:dev": "npx concurrently \"npx vite\" \"npx wait-on http://localhost:5173 && npm run build:electron && node launch.js\""
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.4",
+    "better-sqlite3": "^12.6.2",
+    "chart.js": "^4.5.1",
+    "framer-motion": "^12.34.3",
+    "lucide-react": "^0.575.0",
+    "papaparse": "^5.5.3",
+    "react": "^19.2.4",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^19.2.4",
+    "reflect-metadata": "^0.2.2",
+    "vite": "^7.3.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^32.0.0",
+    "electron-builder": "^26.8.1",
+    "esbuild": "^0.27.3",
+    "typescript": "^5.9.3",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "wait-on": "^9.0.4"
+  },
+  "build": {
+    "appId": "com.financepro.app",
+    "productName": "FinancePro",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
