@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import path from 'path'
 import fs from 'fs'
+import crypto from 'crypto'
 
 let mainWindow: BrowserWindow | null = null
 let db: any = null
@@ -264,4 +265,56 @@ ipcMain.handle('check-for-updates', () => {
 
 ipcMain.handle('restart-app', () => {
     autoUpdater.quitAndInstall()
+})
+
+// --- Security Handlers ---
+const hashPin = (pin: string) => {
+    return crypto.createHash('sha256').update(pin).digest('hex')
+}
+
+ipcMain.handle('is-security-enabled', () => {
+    try {
+        const stmt = db.prepare('SELECT value FROM settings WHERE key = ?')
+        const result = stmt.get('app_pin_hash')
+        return !!result
+    } catch (e) {
+        return false
+    }
+})
+
+ipcMain.handle('verify-pin', (event, pin) => {
+    try {
+        const stmt = db.prepare('SELECT value FROM settings WHERE key = ?')
+        const result = stmt.get('app_pin_hash')
+        if (!result) return true // No pin set, allow access
+        return result.value === hashPin(pin)
+    } catch (e) {
+        return false
+    }
+})
+
+ipcMain.handle('set-pin', (event, pin) => {
+    try {
+        const hash = hashPin(pin)
+        const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
+        stmt.run('app_pin_hash', hash)
+        return true
+    } catch (e) {
+        console.error('Error setting PIN:', e)
+        return false
+    }
+})
+
+ipcMain.handle('disable-security', (event, pin) => {
+    try {
+        const stmt = db.prepare('SELECT value FROM settings WHERE key = ?')
+        const result = stmt.get('app_pin_hash')
+        if (result && result.value === hashPin(pin)) {
+            db.prepare('DELETE FROM settings WHERE key = ?').run('app_pin_hash')
+            return true
+        }
+        return false
+    } catch (e) {
+        return false
+    }
 })

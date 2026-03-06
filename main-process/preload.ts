@@ -11,5 +11,9 @@ contextBridge.exposeInMainWorld('electron', {
     checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
     restartApp: () => ipcRenderer.invoke('restart-app'),
     onUpdateAvailable: (callback: () => void) => ipcRenderer.on('update-available', () => callback()),
-    onUpdateDownloaded: (callback: () => void) => ipcRenderer.on('update-downloaded', () => callback())
+    onUpdateDownloaded: (callback: () => void) => ipcRenderer.on('update-downloaded', () => callback()),
+    isSecurityEnabled: () => ipcRenderer.invoke('is-security-enabled'),
+    verifyPin: (pin: string) => ipcRenderer.invoke('verify-pin', pin),
+    setPin: (pin: string) => ipcRenderer.invoke('set-pin', pin),
+    disableSecurity: (pin: string) => ipcRenderer.invoke('disable-security', pin)
 })

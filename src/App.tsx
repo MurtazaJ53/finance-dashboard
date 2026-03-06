@@ -24,11 +24,15 @@ import {
     BarChart3,
     Coins,
     FileText,
-    Download
+    Download,
+    Lock,
+    Unlock,
+    Shield
 } from 'lucide-react'
 import Papa from 'papaparse'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReportGenerator from './components/ReportGenerator'
+import AuthScreen from './components/AuthScreen'
 import {
     Chart as ChartJS,
     ArcElement,
@@ -70,6 +74,10 @@ declare global {
             restartApp: () => Promise<void>
             onUpdateAvailable: (callback: () => void) => void
             onUpdateDownloaded: (callback: () => void) => void
+            isSecurityEnabled: () => Promise<boolean>
+            verifyPin: (pin: string) => Promise<boolean>
+            setPin: (pin: string) => Promise<boolean>
+            disableSecurity: (pin: string) => Promise<boolean>
         }
     }
 }
@@ -252,10 +260,21 @@ export default function App() {
     const [filterCategory, setFilterCategory] = useState('All Categories')
     const [showImportModal, setShowImportModal] = useState(false)
     const [showReportModal, setShowReportModal] = useState(false)
+    const [isLocked, setIsLocked] = useState(true)
+    const [isSecurityEnabled, setIsSecurityEnabled] = useState(false)
+    const [showSecurityModal, setShowSecurityModal] = useState(false)
+    const [securityPinInput, setSecurityPinInput] = useState('')
+    const [securityPinCurrent, setSecurityPinCurrent] = useState('')
     const [importData, setImportData] = useState<Transaction[]>([])
     const [updateStatus, setUpdateStatus] = useState<'none' | 'available' | 'downloaded'>('none')
 
     useEffect(() => {
+        const checkSecurity = async () => {
+            const enabled = await window.electron.isSecurityEnabled()
+            setIsSecurityEnabled(enabled)
+            setIsLocked(enabled)
+        }
+        checkSecurity()
         loadData()
 
         window.electron.onUpdateAvailable(() => {
@@ -604,6 +623,9 @@ export default function App() {
                         </button>
                         <button className="btn-ghost" onClick={() => setShowReportModal(true)}>
                             <FileText size={16} /> GENERATE REPORT
+                        </button>
+                        <button className="btn-ghost" onClick={() => setShowSecurityModal(true)}>
+                            <Shield size={16} /> SECURITY
                         </button>
                         <button className="btn-ghost" onClick={() => setShowBalanceModal(true)}>
                             <Settings size={16} /> CONFIGURE STARTING FUNDS
@@ -1166,6 +1188,60 @@ export default function App() {
                 }
 
                 {
+                    showSecurityModal && (
+                        <div className="modal-overlay" onClick={() => setShowSecurityModal(false)}>
+                            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="modal-card" onClick={e => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <div className="title-with-icon">
+                                        <Lock size={20} color="var(--blue)" />
+                                        <h2>APP SECURITY</h2>
+                                    </div>
+                                    <button className="close-btn" onClick={() => setShowSecurityModal(false)}><X size={20} /></button>
+                                </div>
+
+                                <div className="security-settings">
+                                    {isSecurityEnabled ? (
+                                        <div className="security-form">
+                                            <p className="modal-subtitle">Security is currently ENABLED. Enter your current PIN to disable it.</p>
+                                            <div className="form-group">
+                                                <label>CURRENT PIN</label>
+                                                <input
+                                                    type="password"
+                                                    maxLength={6}
+                                                    value={securityPinCurrent}
+                                                    onChange={e => setSecurityPinCurrent(e.target.value.replace(/\D/g, ''))}
+                                                    placeholder="Enter 4-6 digit PIN"
+                                                />
+                                            </div>
+                                            <div className="modal-actions">
+                                                <button className="btn-danger" style={{ width: '100%' }} onClick={handleDisableSecurity}>DISABLE SECURITY</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="security-form">
+                                            <p className="modal-subtitle">Set a 4-6 digit PIN to protect your financial data on startup.</p>
+                                            <div className="form-group">
+                                                <label>NEW PIN</label>
+                                                <input
+                                                    type="password"
+                                                    maxLength={6}
+                                                    value={securityPinInput}
+                                                    onChange={e => setSecurityPinInput(e.target.value.replace(/\D/g, ''))}
+                                                    placeholder="Create 4-6 digit PIN"
+                                                />
+                                            </div>
+                                            <div className="modal-actions">
+                                                <button className="btn-green" style={{ width: '100%' }} onClick={handleSetPin}>ENABLE SECURITY</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        </div>
+                    )
+                }
+
+                {
                     showBudgetModal && (
                         <div className="modal-overlay" onClick={() => setShowBudgetModal(false)}>
                             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="modal-card" onClick={e => e.stopPropagation()}>
@@ -1197,6 +1273,11 @@ export default function App() {
                             transactions={filteredTransactions}
                             onClose={() => setShowReportModal(false)}
                         />
+                    )}
+                </AnimatePresence>
+                <AnimatePresence>
+                    {isLocked && isSecurityEnabled && (
+                        <AuthScreen onUnlock={() => setIsLocked(false)} />
                     )}
                 </AnimatePresence>
             </AnimatePresence >
