@@ -53,6 +53,7 @@
     "win": {
       "target": [
         "nsis",
+        "msi",
         "portable"
       ]
     },
