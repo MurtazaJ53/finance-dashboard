@@ -415,6 +415,34 @@ export default function App() {
         }
     }
 
+    const handleSetPin = async () => {
+        if (securityPinInput.length < 4) {
+            addToast('PIN must be at least 4 digits', 'error')
+            return
+        }
+        const success = await window.electron.setPin(securityPinInput)
+        if (success) {
+            setIsSecurityEnabled(true)
+            setShowSecurityModal(false)
+            setSecurityPinInput('')
+            addToast('Security PIN set successfully!', 'success')
+        } else {
+            addToast('Failed to set PIN', 'error')
+        }
+    }
+
+    const handleDisableSecurity = async () => {
+        const success = await window.electron.disableSecurity(securityPinCurrent)
+        if (success) {
+            setIsSecurityEnabled(false)
+            setShowSecurityModal(false)
+            setSecurityPinCurrent('')
+            addToast('Security PIN disabled', 'info')
+        } else {
+            addToast('Incorrect current PIN', 'error')
+        }
+    }
+
     // --- Calculations ---
 
     const filteredTransactions = useMemo(() => {
