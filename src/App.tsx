@@ -503,32 +503,80 @@ export default function App() {
         }
     }, [transactions])
 
-    // AI Coach Insights
+    // --- Advanced AI Insights Engine ---
+    const insights = useMemo(() => {
+        if (transactions.length === 0) return { primary: "Welcome! Add your first transaction.", metrics: [] }
+
+        const now = new Date()
+        const currentMonth = now.getMonth()
+        const currentYear = now.getFullYear()
+
+        const lastMonthDate = new Date(currentYear, currentMonth - 1, 1)
+        const lastMonth = lastMonthDate.getMonth()
+        const lastYear = lastMonthDate.getFullYear()
+
+        const filterMonth = (txs: Transaction[], m: number, y: number) =>
+            txs.filter(t => {
+                const d = new Date(t.date)
+                return d.getMonth() === m && d.getFullYear() === y
+            })
+
+        const currentTxs = filterMonth(transactions, currentMonth, currentYear)
+        const prevTxs = filterMonth(transactions, lastMonth, lastYear)
+
+        const getSpending = (txs: Transaction[]) => txs.filter(t => t.type === 'Debit').reduce((acc, t) => acc + t.amount, 0)
+
+        const currentSpending = getSpending(currentTxs)
+        const prevSpending = getSpending(prevTxs)
+
+        let momText = ""
+        if (prevSpending > 0) {
+            const diff = ((currentSpending - prevSpending) / prevSpending) * 100
+            momText = diff > 0
+                ? `You've spent ${diff.toFixed(0)}% more than last month.`
+                : `Great! You're spending ${Math.abs(diff).toFixed(0)}% less than last month.`
+        }
+
+        // Pacing Alert
+        const dayOfMonth = now.getDate()
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
+        const monthProgress = dayOfMonth / daysInMonth
+
+        const alerts: string[] = []
+        Object.entries(budgets).forEach(([cat, limit]) => {
+            const catSpending = currentTxs.filter(t => t.category === cat && t.type === 'Debit').reduce((acc, t) => acc + t.amount, 0)
+            if (catSpending > limit * monthProgress && catSpending <= limit) {
+                alerts.push(`Caution: You are pacing fast on "${cat}".`)
+            } else if (catSpending > limit) {
+                alerts.push(`Alert: Over budget on "${cat}"!`)
+            }
+        })
+
+        // Pattern Recognition (Simple similarity)
+        const recurring: string[] = []
+        const descriptions = transactions.map(t => t.description.toLowerCase())
+        const uniqueDescs = Array.from(new Set(descriptions))
+        uniqueDescs.forEach(desc => {
+            const occurrences = transactions.filter(t => t.description.toLowerCase() === desc)
+            if (occurrences.length >= 3) {
+                const months = new Set(occurrences.map(t => new Date(t.date).getMonth()))
+                if (months.size >= 2) recurring.push(occurrences[0].description)
+            }
+        })
+
+        return {
+            primary: momText || (currentSpending > 0 ? `Analysis: You've spent ₹${currentSpending.toLocaleString()} this month.` : "Start tracking to see trends."),
+            alerts,
+            recurring: recurring.slice(0, 2),
+            pacing: currentSpending > (summary.income * 0.8) ? "High spending alert" : null
+        }
+    }, [transactions, summary.income, budgets])
+
     const aiInsight = useMemo(() => {
-        if (transactions.length === 0) {
-            return "Welcome! Add your first transaction to unlock smart financial insights."
-        }
-
-        const debits = transactions.filter(t => t && t.type === 'Debit')
-        if (debits.length === 0) {
-            return "Great start! You haven't recorded any expenses yet. Keep up the high savings rate."
-        }
-
-        // Find top category
-        const cats: Record<string, number> = {}
-        debits.forEach(t => { cats[t.category] = (cats[t.category] || 0) + t.amount })
-        const topCat = Object.entries(cats).sort((a, b) => b[1] - a[1])[0]
-
-        if (topCat && topCat[1] > summary.income * 0.5 && summary.income > 0) {
-            return `Warning: Your ${topCat[0]} spending is over 50% of your income. Consider a fallback plan.`
-        }
-
-        if (topCat) {
-            return `Insight: Your top expense category is ${topCat[0]}. You've spent ₹${topCat[1].toLocaleString()} here recently.`
-        }
-
-        return "Finances looking stable. Review your weekly forecast for upcoming trends."
-    }, [transactions, summary.income])
+        if (insights.alerts && insights.alerts.length > 0) return insights.alerts[0]
+        if (insights.recurring && insights.recurring.length > 0) return `Recurring found: ${insights.recurring[0]}`
+        return insights.primary || "Finances looking stable. Review your weekly forecast for upcoming trends."
+    }, [insights])
 
     return (
         <>
