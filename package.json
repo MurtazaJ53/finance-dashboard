@@ -4,6 +4,10 @@
   "version": "0.1.0",
   "description": "Premium Personal Finance Dashboard",
   "author": "FinancePro Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MurtazaJ53/finance-dashboard.git"
+  },
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "npx vite",
@@ -16,6 +20,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "better-sqlite3": "^12.6.2",
     "chart.js": "^4.5.1",
+    "electron-updater": "^6.8.3",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",
     "papaparse": "^5.5.3",
@@ -43,6 +48,13 @@
   "build": {
     "appId": "com.financepro.app",
     "productName": "FinancePro",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "MurtazaJ53",
+        "repo": "finance-dashboard"
+      }
+    ],
     "directories": {
       "output": "dist-electron"
     },

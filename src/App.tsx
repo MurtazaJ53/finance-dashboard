@@ -65,6 +65,10 @@ declare global {
             updateCategoryRule: (rule: { keyword: string, category: string }) => Promise<void>
             getSetting: (key: string) => Promise<string>
             updateSetting: (key: string, value: string) => Promise<void>
+            checkForUpdates: () => Promise<void>
+            restartApp: () => Promise<void>
+            onUpdateAvailable: (callback: () => void) => void
+            onUpdateDownloaded: (callback: () => void) => void
         }
     }
 }
@@ -132,7 +136,7 @@ const EmptyState = ({ icon: Icon, title, message }: { icon: any, title: string, 
     </div>
 )
 
-const Sidebar = ({ activePage, setActivePage, onAddIncome, onAddExpense, aiInsight }: { activePage: string, setActivePage: (p: string) => void, onAddIncome: () => void, onAddExpense: () => void, aiInsight: string }) => {
+const Sidebar = ({ activePage, setActivePage, onAddIncome, onAddExpense, aiInsight, updateStatus }: { activePage: string, setActivePage: (p: string) => void, onAddIncome: () => void, onAddExpense: () => void, aiInsight: string, updateStatus: 'none' | 'available' | 'downloaded' }) => {
     return (
         <div className="sidebar">
             <div className="sidebar-logo">
@@ -201,6 +205,21 @@ const Sidebar = ({ activePage, setActivePage, onAddIncome, onAddExpense, aiInsig
 
             <div className="sidebar-divider" />
 
+            {updateStatus !== 'none' && (
+                <div className={`sidebar-update-prompt ${updateStatus}`} title={updateStatus === 'downloaded' ? 'Click to restart and update' : 'Downloading update...'}>
+                    <div className="update-icon-wrapper">
+                        {updateStatus === 'downloaded' ? (
+                            <ArrowUpRight size={18} color="#00ff88" onClick={() => window.electron.restartApp()} />
+                        ) : (
+                            <RefreshCw size={18} className="spin" />
+                        )}
+                    </div>
+                    <div className="update-text" onClick={() => updateStatus === 'downloaded' && window.electron.restartApp()}>
+                        {updateStatus === 'downloaded' ? 'Update Ready' : 'Downloading...'}
+                    </div>
+                </div>
+            )}
+
             <div className="sidebar-footer">
                 FINANCEPRO V0.1.1
             </div>
@@ -232,9 +251,20 @@ export default function App() {
     const [filterCategory, setFilterCategory] = useState('All Categories')
     const [showImportModal, setShowImportModal] = useState(false)
     const [importData, setImportData] = useState<Transaction[]>([])
+    const [updateStatus, setUpdateStatus] = useState<'none' | 'available' | 'downloaded'>('none')
 
     useEffect(() => {
         loadData()
+
+        window.electron.onUpdateAvailable(() => {
+            setUpdateStatus('available')
+            addToast('New update is available and downloading in background...', 'info')
+        })
+
+        window.electron.onUpdateDownloaded(() => {
+            setUpdateStatus('downloaded')
+            addToast('Update ready! Click the update icon in sidebar to restart.', 'success')
+        })
     }, [])
 
     const loadData = async () => {
@@ -508,6 +538,7 @@ export default function App() {
                 onAddIncome={() => { setModalType('Credit'); setShowAddModal(true); }}
                 onAddExpense={() => { setModalType('Debit'); setShowAddModal(true); }}
                 aiInsight={aiInsight}
+                updateStatus={updateStatus}
             />
 
             <main className="main-content">

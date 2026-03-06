@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import path from 'path'
 import fs from 'fs'
 
@@ -149,6 +150,11 @@ app.whenReady().then(() => {
     } catch (e) {
         console.error('CRITICAL: createWindow failed at the top level:', e)
     }
+
+    if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify()
+    }
+
     console.log('Initialization sequence complete.')
 })
 
@@ -234,4 +240,28 @@ ipcMain.handle('update-setting', (event, { key, value }) => {
         console.error('Error updating setting:', e)
         throw e
     }
+})
+
+// --- Auto-Updater Events ---
+autoUpdater.on('update-available', () => {
+    mainWindow?.webContents.send('update-available')
+})
+
+autoUpdater.on('update-downloaded', () => {
+    mainWindow?.webContents.send('update-downloaded')
+})
+
+autoUpdater.on('error', (err) => {
+    console.error('Auto-updater error:', err)
+})
+
+ipcMain.handle('check-for-updates', () => {
+    if (app.isPackaged) {
+        return autoUpdater.checkForUpdatesAndNotify()
+    }
+    return null
+})
+
+ipcMain.handle('restart-app', () => {
+    autoUpdater.quitAndInstall()
 })
