@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import Papa from 'papaparse'
 import { motion, AnimatePresence } from 'framer-motion'
+import ReportGenerator from './components/ReportGenerator'
 import {
     Chart as ChartJS,
     ArcElement,
@@ -250,6 +251,7 @@ export default function App() {
     const [searchQuery, setSearchQuery] = useState('')
     const [filterCategory, setFilterCategory] = useState('All Categories')
     const [showImportModal, setShowImportModal] = useState(false)
+    const [showReportModal, setShowReportModal] = useState(false)
     const [importData, setImportData] = useState<Transaction[]>([])
     const [updateStatus, setUpdateStatus] = useState<'none' | 'available' | 'downloaded'>('none')
 
@@ -599,6 +601,9 @@ export default function App() {
                     <div className="page-header-actions">
                         <button className="btn-green" onClick={() => { setModalType('Debit'); setShowAddModal(true); }}>
                             <Plus size={16} /> NEW TRANSACTION
+                        </button>
+                        <button className="btn-ghost" onClick={() => setShowReportModal(true)}>
+                            <FileText size={16} /> GENERATE REPORT
                         </button>
                         <button className="btn-ghost" onClick={() => setShowBalanceModal(true)}>
                             <Settings size={16} /> CONFIGURE STARTING FUNDS
@@ -1186,6 +1191,14 @@ export default function App() {
                         </div>
                     )
                 }
+                <AnimatePresence>
+                    {showReportModal && (
+                        <ReportGenerator
+                            transactions={filteredTransactions}
+                            onClose={() => setShowReportModal(false)}
+                        />
+                    )}
+                </AnimatePresence>
             </AnimatePresence >
 
             <div className="toast-container">
